@@ -2,6 +2,7 @@ from tortoise import fields
 
 from database.models.core import AbstractBaseModel
 from database.models.group import Group
+from database.models.event import Event
 
 
 class User(AbstractBaseModel):
@@ -10,6 +11,8 @@ class User(AbstractBaseModel):
     username = fields.CharField(max_length=32, null=True)
     owned_groups: fields.ReverseRelation[Group]
     groups: fields.ManyToManyRelation[Group]
+    created_events: fields.ReverseRelation[Event]
+    events: fields.ManyToManyRelation[Event]
 
     async def update_chat_data(self, chat_id: int, username: str):
         need_save = False

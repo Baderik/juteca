@@ -2,21 +2,14 @@ from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
-from tortoise.exceptions import DoesNotExist
 
 from callbacks.staff.group import GroupCallback, GroupEditCallback
 from database.models.user import User
-from database.models.group import Group
-from services.staff.group import groups_list, groups_empty, group_index
-from services.base import not_found, permission_denied
+from services.staff.group import group_index, create_group, my_groups, open_group
+
 from dialogs.staff.group import CreateGroup
 
 r = Router()
-
-
-async def create_group(msg: Message, name: str, user: User):
-    g = await Group.create(owner=user, name=name)
-    return await msg.answer(f"Я сделаль: создано Группа #{g.id}: {g.name} ")
 
 
 @r.message(Command('newGroup'))
@@ -36,14 +29,6 @@ async def h_new_group(msg: Message, user: User, state: FSMContext):
     await state.clear()
 
 
-async def my_groups(msg: Message, user: User, edit: bool = False):
-    await user.fetch_related("owned_groups")
-
-    if len(user.owned_groups):
-        return await groups_list(msg, user, edit=edit)
-    return await groups_empty(msg, edit=edit)
-
-
 @r.message(Command('myGroups'))
 async def h_my_groups_command(msg: Message, user: User):
     await my_groups(msg, user)
@@ -53,21 +38,6 @@ async def h_my_groups_command(msg: Message, user: User):
 async def h_my_groups_callback(callback: CallbackQuery, user: User):
     await my_groups(callback.message, user, True)
     await callback.answer()
-
-
-async def open_group(callback: CallbackQuery, callback_data: GroupCallback, user: User) -> Group | None:
-    try:
-        group = await Group.get(id=callback_data.id)
-        owner = await group.owner
-        assert owner.id == user.id
-        return group
-
-    except DoesNotExist:
-        await not_found(callback, f"Группа #{callback_data.id}")
-        await groups_list(callback.message, user, True)
-
-    except AssertionError:
-        await permission_denied(callback)
 
 
 @r.callback_query(GroupCallback.filter())

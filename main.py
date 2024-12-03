@@ -20,7 +20,7 @@ async def main():
     dp = Dispatcher()
     dp.message.middleware(user.UserMiddleware())
     dp.callback_query.middleware(user.UserMiddleware())
-    dp.include_routers(staff.base_r, staff.group_r)
+    dp.include_routers(staff.base_r, staff.group_r, staff.event_r)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)

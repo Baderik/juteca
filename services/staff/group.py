@@ -1,10 +1,11 @@
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardMarkup
+from tortoise.exceptions import DoesNotExist
 
 from callbacks.staff.group import GroupCallback
 from database.models.user import User
 from database.models.group import Group
-from services.base import field
+from services.base import field, not_found, permission_denied
 from keyboards.staff.group import group_keyboard
 
 
@@ -47,7 +48,35 @@ async def group_index(msg: Message, group: Group):
     await msg.edit_text(
         f"Редактирование группы #{group.id}\n"
         f"\n"
-        f"<b>Имя</b>: {group.name}\n"
+        f"<b>Название</b>: {group.name}\n"
         f"<b>Описание</b>: {field(group.desc)}",
         reply_markup=group_keyboard(group.id)
     )
+
+
+async def create_group(msg: Message, name: str, user: User):
+    g = await Group.create(owner=user, name=name)
+    return await msg.answer(f"Я сделаль: создано Группа #{g.id}: {g.name} ")
+
+
+async def my_groups(msg: Message, user: User, edit: bool = False):
+    await user.fetch_related("owned_groups")
+
+    if len(user.owned_groups):
+        return await groups_list(msg, user, edit=edit)
+    return await groups_empty(msg, edit=edit)
+
+
+async def open_group(callback: CallbackQuery, callback_data: GroupCallback, user: User) -> Group | None:
+    try:
+        group = await Group.get(id=callback_data.id)
+        owner = await group.owner
+        assert owner.id == user.id
+        return group
+
+    except DoesNotExist:
+        await not_found(callback, f"Группа #{callback_data.id}")
+        await groups_list(callback.message, user, True)
+
+    except AssertionError:
+        await permission_denied(callback)
