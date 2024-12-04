@@ -1,12 +1,14 @@
 from aiogram.types import Message, CallbackQuery
+from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardMarkup
 from tortoise.exceptions import DoesNotExist
 
 from callbacks.staff.group import GroupCallback
 from database.models.user import User
 from database.models.group import Group
+from dialogs.staff.group import EditGroup
 from services.base import field, not_found, permission_denied
-from keyboards.staff.group import group_keyboard
+from keyboards.staff.group import group_keyboard, delete_group_keyboard
 
 
 def _empty_txt() -> str:
@@ -44,7 +46,7 @@ async def groups_404(msg: Message, gid: int):
         return await msg.edit_text(text=_empty_txt(), reply_markup=None)
 
 
-async def group_index(msg: Message, group: Group):
+async def msg_set_group(msg: Message, group: Group):
     await msg.edit_text(
         f"Редактирование группы #{group.id}\n"
         f"\n"
@@ -56,7 +58,22 @@ async def group_index(msg: Message, group: Group):
 
 async def create_group(msg: Message, name: str, user: User):
     g = await Group.create(owner=user, name=name)
-    return await msg.answer(f"Я сделаль: создано Группа #{g.id}: {g.name} ")
+    return await msg.answer(f"Я сделаль: создано Группа #{g.id}: {g.name}")
+
+
+async def update_group(msg: Message, gid: int, user: User, **fields):
+    group = await open_group(msg, gid, user)
+    if not group:
+        return
+
+    for k, v in fields.items():
+        match k:
+            case "name":
+                group.name = v
+            case "desc":
+                group.desc = v
+    await group.save()
+    await msg.answer(f"Всё запомнил и записал >_^")
 
 
 async def my_groups(msg: Message, user: User, edit: bool = False):
@@ -67,16 +84,39 @@ async def my_groups(msg: Message, user: User, edit: bool = False):
     return await groups_empty(msg, edit=edit)
 
 
-async def open_group(callback: CallbackQuery, callback_data: GroupCallback, user: User) -> Group | None:
+async def open_group(t_obj: Message | CallbackQuery, gid: int, user: User) -> Group | None:
     try:
-        group = await Group.get(id=callback_data.id)
+        group = await Group.get(id=gid)
         owner = await group.owner
         assert owner.id == user.id
         return group
 
     except DoesNotExist:
-        await not_found(callback, f"Группа #{callback_data.id}")
-        await groups_list(callback.message, user, True)
+        await not_found(t_obj, f"Группа #{gid}")
+        await groups_list(t_obj, user, True)
 
     except AssertionError:
-        await permission_denied(callback)
+        await permission_denied(t_obj)
+
+
+async def wait_name(msg: Message, state: FSMContext):
+    await state.set_state(EditGroup.choosing_name)
+
+    return await msg.answer(f"Теперь придумай <u>название группы</u>. "
+                            f"Отправь его следующим сообщением, либо набери /cancel для отмены")
+
+
+async def wait_description(msg: Message, state: FSMContext):
+    await state.set_state(EditGroup.choosing_description)
+
+    return await msg.answer(f"Жду <u>описание группы</u>. "
+                            f"Отправь его следующим сообщением, либо набери /cancel для отмены")
+
+
+async def wait_delete(msg: Message, group: Group, state: FSMContext):
+    await state.set_state(EditGroup.try_delete)
+
+    return await msg.edit_text(f"Ты уверен, что хочешь <b>удалить</b> группу {group.head}."
+                               f"Выбери один из вариантов ниже",
+                               reply_markup=delete_group_keyboard(group.id)
+                               )

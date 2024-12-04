@@ -1,7 +1,7 @@
 from tortoise import fields
 
 from database.models.core import AbstractBaseModel
-from database.enums import WeekDay, weekday_str
+from database.enums import WeekDay
 
 
 class Event(AbstractBaseModel):
@@ -14,3 +14,7 @@ class Event(AbstractBaseModel):
 
     class Meta:
         table = "events"
+
+    @property
+    def head(self) -> str:
+        return f"{self.title} #{self.id}"

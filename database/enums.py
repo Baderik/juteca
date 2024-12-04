@@ -1,7 +1,8 @@
 from enum import Enum
 
 
-weekday_str = ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+short_weekday = ("Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс")
+full_weekday = ("Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Суббота", "Воскресенье")
 
 
 class WeekDay(int, Enum):
@@ -14,9 +15,13 @@ class WeekDay(int, Enum):
     sunday = 6
 
     @property
+    def short_title(self):
+        return short_weekday[self]
+
+    @property
     def title(self):
-        return weekday_str[self]
+        return full_weekday[self]
 
     @classmethod
     def by_day(cls, day):
-        return cls(weekday_str.index(day))
+        return cls(short_weekday.index(day))

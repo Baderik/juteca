@@ -14,7 +14,7 @@ class User(AbstractBaseModel):
     created_events: fields.ReverseRelation[Event]
     events: fields.ManyToManyRelation[Event]
 
-    async def update_chat_data(self, chat_id: int, username: str):
+    async def update_chat_data(self, chat_id: int, username: str) -> None:
         need_save = False
         if self.username != username:
             self.username = username
@@ -27,5 +27,9 @@ class User(AbstractBaseModel):
             await self.save()
 
     @property
-    def is_active(self):
+    def is_active(self) -> bool:
         return self.chat_id is not None
+
+    @property
+    def head(self) -> str:
+        return f"{self.username} #{self.telegram_id}"

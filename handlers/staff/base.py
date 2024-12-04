@@ -9,7 +9,7 @@ r = Router()
 @r.message(Command("start"))
 async def h_start(msg: Message, state: FSMContext):
     await state.clear()
-    await msg.answer("Приветствую, сэмпай ≽^•⩊•^≼")
+    await msg.answer("Приветствую, сэмпай ≽^•⩊•^≼", reply_markup=ReplyKeyboardRemove())
 
 
 @r.message(Command("cancel"))
