@@ -6,3 +6,4 @@ class EditEvent(StatesGroup):
     choosing_weekday = State()
     choosing_daytime = State()
     try_delete = State()
+    choosing_groups = State()

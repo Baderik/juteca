@@ -8,7 +8,7 @@ from database.models.user import User
 from database.models.event import Event
 from dialogs.staff.event import EditEvent
 from services.base import not_found, permission_denied, time_format, field_related
-from keyboards.staff.event import weekday_markup, event_keyboard, delete_event_keyboard
+from keyboards.staff.event import weekday_markup, event_keyboard, delete_event_keyboard, event_groups_keyboard
 
 
 def _empty_txt() -> str:
@@ -95,6 +95,8 @@ async def update_event(msg: Message, eid: int, user: User, **fields):
         match k:
             case "title":
                 event.title = v
+            case "weekday":
+                event.week_day = v
     await event.save()
     await msg.answer(f"Всё запомнил и записал >_^")
 
@@ -105,11 +107,16 @@ async def wait_title(msg: Message, state: FSMContext):
     return await msg_choosing_title(msg)
 
 
-# async def wait_description(msg: Message, state: FSMContext):
-#     await state.set_state(EditEvent.choosing_description)
-#
-#     return await msg.answer(f"Жду <u>описание группы</u>. "
-#                             f"Отправь его следующим сообщением, либо набери /cancel для отмены")
+async def wait_weekday(msg: Message, state: FSMContext):
+    await state.set_state(EditEvent.choosing_weekday)
+
+    return await msg_choosing_weekday(msg)
+
+
+async def wait_daytime(msg: Message, state: FSMContext):
+    await state.set_state(EditEvent.choosing_daytime)
+
+    return await msg_choosing_daytime(msg)
 
 
 async def wait_delete(msg: Message, event: Event, state: FSMContext):
@@ -119,3 +126,18 @@ async def wait_delete(msg: Message, event: Event, state: FSMContext):
                                f"Выбери один из вариантов ниже",
                                reply_markup=delete_event_keyboard(event.id)
                                )
+
+
+async def to_groups(msg: Message, user: User, event: Event):
+    await user.fetch_related("owned_groups")
+    await event.fetch_related("groups")
+    await msg.edit_text(f"Редактируем список групп для {event.head}\n"
+                        f"\n"
+                        f"Уже подключенные - ✅",
+                        reply_markup=event_groups_keyboard(event, user))
+
+
+async def connected_groups(msg: Message, user: User, event: Event, state: FSMContext):
+    await state.set_state(EditEvent.choosing_groups)
+
+    await to_groups(msg, user, event)

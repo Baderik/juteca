@@ -8,3 +8,9 @@ class EventCallback(CallbackData, prefix="event"):
 class EventEditCallback(CallbackData, prefix="event_edit"):
     id: int
     value: str
+
+
+class EventGroupCallback(CallbackData, prefix="event_group"):
+    id: int
+    group_id: int
+    is_used: bool
