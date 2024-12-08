@@ -6,7 +6,7 @@ from aiogram.enums.parse_mode import ParseMode
 
 from config import config
 from database.setup import init_db
-from handlers import staff
+from handlers import staff, default
 from middlewares import user
 
 
@@ -20,7 +20,8 @@ async def main():
     dp = Dispatcher()
     dp.message.middleware(user.UserMiddleware())
     dp.callback_query.middleware(user.UserMiddleware())
-    dp.include_routers(staff.base_r, staff.group_r, staff.event_r)
+    dp.include_routers(staff.base_r, staff.group_r, staff.event_r,
+                       default.base_r, default.group_r, default.timetable_r)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
