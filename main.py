@@ -3,11 +3,11 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums.parse_mode import ParseMode
+from pathlib import Path
 
 from config import config
 from database.setup import init_db
 from handlers import staff, default
-from middlewares import user
 
 
 async def main():
@@ -18,14 +18,13 @@ async def main():
 
     bot = Bot(token=config.bot_token.get_secret_value(), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher()
-    dp.message.middleware(user.UserMiddleware())
-    dp.callback_query.middleware(user.UserMiddleware())
-    dp.include_routers(staff.base_r, staff.group_r, staff.event_r,
-                       default.base_r, default.group_r, default.timetable_r)
+    dp.include_routers(staff.router, default.router)
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
+    if not Path(".env").exists():
+        raise FileExistsError("Вы забыли создать .env файл, перечитайте документацию")
     asyncio.run(main())

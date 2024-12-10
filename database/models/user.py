@@ -9,6 +9,7 @@ class User(AbstractBaseModel):
     telegram_id = fields.IntField()
     chat_id = fields.IntField(null=True)
     username = fields.CharField(max_length=32, null=True)
+    is_staff = fields.BooleanField(default=False)
     owned_groups: fields.ReverseRelation[Group]
     groups: fields.ManyToManyRelation[Group]
     created_events: fields.ReverseRelation[Event]
@@ -32,4 +33,23 @@ class User(AbstractBaseModel):
 
     @property
     def head(self) -> str:
-        return f"{self.username} #{self.telegram_id}"
+        return f"@{self.username} #{self.telegram_id}"
+
+
+class UpgradeRequest(AbstractBaseModel):
+    sender = fields.ForeignKeyField("models.User", related_name="upgrade_requests")
+    finished = fields.BooleanField(default=False)
+    moderator = fields.ForeignKeyField("models.User", related_name="finished_requests", null=True)
+    approved = fields.BooleanField(null=True)
+
+    @property
+    def head(self) -> str:
+        return f"Upgrade Req #{self.id}"
+
+    async def finish(self, approve: bool, user: User):
+        if self.finished:
+            return
+        self.finished = True
+        self.approved = approve
+        self.moderator = user
+        return self.save()
