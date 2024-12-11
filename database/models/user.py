@@ -9,6 +9,7 @@ class User(AbstractBaseModel):
     telegram_id = fields.IntField()
     chat_id = fields.IntField(null=True)
     username = fields.CharField(max_length=32, null=True)
+    blocked = fields.BooleanField(default=False)
     is_staff = fields.BooleanField(default=False)
     owned_groups: fields.ReverseRelation[Group]
     groups: fields.ManyToManyRelation[Group]
@@ -29,7 +30,7 @@ class User(AbstractBaseModel):
 
     @property
     def is_active(self) -> bool:
-        return self.chat_id is not None
+        return self.chat_id is not None and not self.blocked
 
     @property
     def head(self) -> str:
