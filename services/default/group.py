@@ -4,7 +4,7 @@ from keyboards.default.group import group_page_keyboard
 
 
 def _group(num: int) -> str:
-    if num == 0 and num >= 5:
+    if num == 0 or num >= 5:
         return f"Нашлось {num} групп"
     if num == 1:
         return f"Нашлась {num} группа"
@@ -32,7 +32,8 @@ async def get_page(user: User, search: str, page: int, page_size: int):
     page_data = await data.offset(offset).limit(page_size)
     count = await data.count()
     before_page = page - 1
-    last_page = (count - 1) // page_size + 1
+    last_page = (count - 1) // page_size + 1 if count else 0
+    page = page if count else 0
     next_page = 0 if page == last_page else page + 1
     return {
         "text": _text(page_data, search, count, page, page_size),

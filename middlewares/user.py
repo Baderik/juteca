@@ -25,7 +25,7 @@ class UserMiddleware(BaseMiddleware):
                 "Для этого напиши мне что-нибудь в личные сообщения, например: /start")
             return
 
-        if data['user'].telegram_id in config.super_users:
+        if not config.only_super or data['user'].telegram_id in config.super_users:
             return await handler(event, data)
 
         await event.answer("Доступ закрыт")
